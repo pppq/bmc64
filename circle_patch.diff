@@ -234,6 +234,15 @@ index 2ef7052..c45440e 100644
  
  #endif
  
+@@ -100,7 +100,7 @@
+ // for other older QEMU versions it does not work. On the Raspberry Pi 4
+ // setting this option is required.
+
+-#define USE_PHYSICAL_COUNTER
++//#define USE_PHYSICAL_COUNTER
+
+ #endif
+
 @@ -126,7 +126,7 @@
  // compatibility with existing applications it is not set by default.
  // This option has no influence on the Raspberry Pi 4.
@@ -426,3 +435,16 @@ index 2893a86..9aac786 100644
  
  	delete m_pURB;
  	m_pURB = 0;
+diff --git a/Rules.mk b/Rules.mk
+index 1878afe..d662fdc 100644
+--- a/Rules.mk
++++ b/Rules.mk
+@@ -56,7 +56,7 @@ TARGET        ?= kernel7l
+ else
+ $(error RASPPI must be set to 1, 2, 3 or 4)
+ endif
+-LOADADDR = 0x8000
++LOADADDR = 0x10000
+ else ifeq ($(strip $(AARCH)),64)
+ ifeq ($(strip $(RASPPI)),3)
+ ARCH   ?= -DAARCH=64 -march=armv8-a -mtune=cortex-a53 -mlittle-endian -mcmodel=small
