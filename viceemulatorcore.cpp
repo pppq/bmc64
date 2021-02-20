@@ -95,7 +95,7 @@ void ViceEmulatorCore::RunMainVice(bool wait) {
 #if defined(RASPI_C64)
   int argc = 9;
   char *argv[] = {
-      (char *)"vice", timing_option_, (char *)"-sounddev", (char *)"raspi",
+      (char *)"vice", timing_option_, (char *)"-sounddev", (char *)"dummy",
       (char *)"-soundsync", (char *)"0",
       (char *)"-refresh", (char *)"1",
       // Unless we disable the video cache, vsync is messed up
@@ -104,7 +104,7 @@ void ViceEmulatorCore::RunMainVice(bool wait) {
 #elif defined(RASPI_C128)
   int argc = 12;
   char *argv[] = {
-      (char *)"vice", timing_option_, (char *)"-sounddev", (char *)"raspi",
+      (char *)"vice", timing_option_, (char *)"-sounddev", (char *)"dummy",
       (char *)"-soundoutput", (char *)"1", (char *)"-soundsync", (char *)"0",
       (char *)"-refresh", (char *)"1",
       // Unless we disable the video cache, vsync is messed up
@@ -114,7 +114,7 @@ void ViceEmulatorCore::RunMainVice(bool wait) {
 #elif defined(RASPI_VIC20)
   int argc = 11;
   char *argv[] = {
-      (char *)"vice", timing_option_, (char *)"-sounddev", (char *)"raspi",
+      (char *)"vice", timing_option_, (char *)"-sounddev", (char *)"dummy",
       (char *)"-soundoutput", (char *)"1", (char *)"-soundsync", (char *)"0",
       (char *)"-refresh", (char *)"1",
       // Unless we disable the video cache, vsync is messed up
@@ -123,7 +123,7 @@ void ViceEmulatorCore::RunMainVice(bool wait) {
 #elif defined(RASPI_PLUS4)
   int argc = 11;
   char *argv[] = {
-      (char *)"vice", timing_option_, (char *)"-sounddev", (char *)"raspi",
+      (char *)"vice", timing_option_, (char *)"-sounddev", (char *)"dummy",
       (char *)"-soundoutput", (char *)"1", (char *)"-soundsync", (char *)"0",
       (char *)"-refresh", (char *)"1",
       // Unless we disable the video cache, vsync is messed up
@@ -132,7 +132,7 @@ void ViceEmulatorCore::RunMainVice(bool wait) {
 #elif defined(RASPI_PET)
   int argc = 11;
   char *argv[] = {
-      (char *)"vice", timing_option_, (char *)"-sounddev", (char *)"raspi",
+      (char *)"vice", timing_option_, (char *)"-sounddev", (char *)"dummy",
       (char *)"-soundoutput", (char *)"1", (char *)"-soundsync", (char *)"0",
       (char *)"-refresh", (char *)"1",
       (char *)"+CRTCvcache",
