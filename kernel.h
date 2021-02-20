@@ -37,7 +37,7 @@
 #include <stdint.h>
 #include <vc4/vchiq/vchiqdevice.h>
 
-#include "fbl.h"
+#include "fbl_qemu.h"
 
 extern "C" {
 #include "third_party/common/circle.h"

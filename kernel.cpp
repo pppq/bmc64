@@ -1371,13 +1371,13 @@ void CKernel::circle_check_gpio() {
   // to initialize sound when helper cores were late initializing the sid
   // tables.
 #ifdef ARM_ALLOW_MULTI_CORE
-  circle_lock_acquire();
-  if (mNeedSoundInit && mNumCoresComplete >= 2) {
-     mViceSound = new ViceSound(&mVCHIQ, mViceOptions.GetAudioOut());
-     mViceSound->Playback(vol_percent_to_vchiq(mVolume), mNumSoundChannels);
-     mNeedSoundInit = false;
-  }
-  circle_lock_release();
+  // circle_lock_acquire();
+  // if (mNeedSoundInit && mNumCoresComplete >= 2) {
+  //    mViceSound = new ViceSound(&mVCHIQ, mViceOptions.GetAudioOut());
+  //    mViceSound->Playback(vol_percent_to_vchiq(mVolume), mNumSoundChannels);
+  //    mNeedSoundInit = false;
+  // }
+  // circle_lock_release();
 #endif
 
   int gpio_config = emu_get_gpio_config();
@@ -1498,22 +1498,22 @@ void CKernel::circle_boot_complete() {
   // early, the sound data consumer is a bit further behind.
   if (!mViceSound) {
 #ifdef ARM_ALLOW_MULTI_CORE
-    circle_lock_acquire();
-    if (mNumCoresComplete >= 2) {
-       // Cores 1/2 are done initing sound tables before we tried to
-       // start playback device.
-       mViceSound = new ViceSound(&mVCHIQ, mViceOptions.GetAudioOut());
-       mViceSound->Playback(vol_percent_to_vchiq(mVolume), mNumSoundChannels);
-    } else {
-       // Cores 1/2 are still initializing sound tables. We'll init
-       // sound later.  This is to get around the crashing noise you
-       // can get on boot if you have a cartridge attached.
-       mNeedSoundInit = true;
-    }
-    circle_lock_release();
+    // circle_lock_acquire();
+    // if (mNumCoresComplete >= 2) {
+    //    // Cores 1/2 are done initing sound tables before we tried to
+    //    // start playback device.
+    //    mViceSound = new ViceSound(&mVCHIQ, mViceOptions.GetAudioOut());
+    //    mViceSound->Playback(vol_percent_to_vchiq(mVolume), mNumSoundChannels);
+    // } else {
+    //    // Cores 1/2 are still initializing sound tables. We'll init
+    //    // sound later.  This is to get around the crashing noise you
+    //    // can get on boot if you have a cartridge attached.
+    //    mNeedSoundInit = true;
+    // }
+    // circle_lock_release();
 #else
-    mViceSound = new ViceSound(&mVCHIQ, mViceOptions.GetAudioOut());
-    mViceSound->Playback(vol_percent_to_vchiq(mVolume), mNumSoundChannels);
+    // mViceSound = new ViceSound(&mVCHIQ, mViceOptions.GetAudioOut());
+    // mViceSound->Playback(vol_percent_to_vchiq(mVolume), mNumSoundChannels);
 #endif
   }
 

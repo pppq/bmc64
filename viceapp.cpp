@@ -15,7 +15,7 @@
 
 #include "viceapp.h"
 
-#include "fbl.h"
+#include "fbl_qemu.h"
 
 #if defined(RASPI_C64)
 #include "bootstat_c64.h"
@@ -202,9 +202,9 @@ bool ViceScreenApp::Initialize(void) {
     return false;
   }
 
-  if (!mVCHIQ.Initialize()) {
-    return false;
-  }
+  // if (!mVCHIQ.Initialize()) {
+  //  return false;
+  // }
 
   SetupGPIO();
 
