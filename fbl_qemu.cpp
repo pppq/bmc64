@@ -76,8 +76,8 @@ static uint32_t pal_argb[256] = {
   ARGB(0x00, 0x00, 0x00, 0x00),
 };
 
-#define SCREEN_W 800
-#define SCREEN_H 600
+#define SCREEN_W 768
+#define SCREEN_H 544
 
 static CBcmFrameBuffer *bcmFrameBuffer;
 static uint32_t frameBufferOffsetY = 0;
@@ -370,7 +370,7 @@ void FrameBufferLayer::FrameReady(int to_offscreen) {
 
     for (int y = 0; y < fb_height_; y++) {
       for (int x = 0; x < fb_width_; x++) {
-        uint8_t srcIdx = src[y * fb_pitch_ + x];
+        uint8_t srcIdx = src[x];
         
         uint8_t a;
         uint8_t r;
@@ -396,6 +396,7 @@ void FrameBufferLayer::FrameReady(int to_offscreen) {
         dst[x] = (a << 15) | (r << 10) | (g << 5) | b;
       }
       
+      src += fb_pitch_;
       dst += fb_width_;
     }
   } else {
@@ -403,7 +404,7 @@ void FrameBufferLayer::FrameReady(int to_offscreen) {
 
     for (int y = 0; y < fb_height_; y++) {
      for (int x = 0; x < fb_width_; x++) {
-        uint16_t srcCol16 = src[y * fb_pitch_ + x];
+        uint16_t srcCol16 = src[x];
           
         uint8_t a = 1;
         uint8_t r = (srcCol16 >> 11) & 31;
@@ -413,6 +414,7 @@ void FrameBufferLayer::FrameReady(int to_offscreen) {
         dst[x] = (a << 15) | (r << 10) | (g << 5) | b;
       }
 
+      src += fb_pitch_;
       dst += fb_width_;
     }
   }
@@ -457,7 +459,6 @@ void FrameBufferLayer::SwapResources(
     }
 
     int budget_y = 0;
-    int sy = 0;
 
     // erase top edge
     if (first && current->dst_y_ > 0) {
@@ -469,7 +470,7 @@ void FrameBufferLayer::SwapResources(
       budget_y += current->src_h_;
       while (budget_y > current->dst_h_) {
         budget_y -= current->dst_h_;
-        sy++;
+        src += current->fb_width_;
       }
       
       // erase left edge
@@ -488,7 +489,7 @@ void FrameBufferLayer::SwapResources(
           sx++;
         }
         
-        uint16_t srcCol = src[sy * current->fb_width_ + sx];
+        uint16_t srcCol = src[sx];
         uint8_t a = srcCol >> 15;
 
         // 1-bit alpha
