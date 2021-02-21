@@ -488,7 +488,7 @@ void FrameBufferLayer::SwapResources(
           sx++;
         }
         
-        uint32_t srcCol = src[sy * current->fb_width_ + sx];
+        uint16_t srcCol = src[sy * current->fb_width_ + sx];
         uint8_t a = srcCol >> 15;
 
         // 1-bit alpha
