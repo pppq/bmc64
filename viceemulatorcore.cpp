@@ -166,15 +166,15 @@ void ViceEmulatorCore::Run(unsigned nCore) {
     // Core 2 will initialize 6581 filter data. Then partition 1
     // of the resampling tables. Then sleep.
 #ifdef ARM_ALLOW_MULTI_CORE
-    ComputeResidFilter(0);
-    reSID::SID::ComputeSamplingTable(cyclesPerSecond_,
-                                     reSID::SAMPLE_RESAMPLE,
-                                     SAMPLE_RATE, passBandFreq_, 0.97,
-                                     1);
-    reSID::SID::ComputeSamplingTable(cyclesPerSecond_,
-                                     reSID::SAMPLE_RESAMPLE_FASTMEM,
-                                     SAMPLE_RATE, passBandFreq_, 0.97,
-                                     1);
+    // ComputeResidFilter(0);
+    // reSID::SID::ComputeSamplingTable(cyclesPerSecond_,
+    //                                  reSID::SAMPLE_RESAMPLE,
+    //                                  SAMPLE_RATE, passBandFreq_, 0.97,
+    //                                  1);
+    // reSID::SID::ComputeSamplingTable(cyclesPerSecond_,
+    //                                  reSID::SAMPLE_RESAMPLE_FASTMEM,
+    //                                  SAMPLE_RATE, passBandFreq_, 0.97,
+    //                                  1);
     circle_kernel_core_init_complete(2);
 #endif
     break;
@@ -183,27 +183,27 @@ void ViceEmulatorCore::Run(unsigned nCore) {
     // of the resampling tables. Then sleep.
 #ifdef ARM_ALLOW_MULTI_CORE
     ComputeResidFilter(1);
-    reSID::SID::ComputeSamplingTable(cyclesPerSecond_,
-                                     reSID::SAMPLE_RESAMPLE,
-                                     SAMPLE_RATE, passBandFreq_, 0.97,
-                                     2);
-    reSID::SID::ComputeSamplingTable(cyclesPerSecond_,
-                                     reSID::SAMPLE_RESAMPLE_FASTMEM,
-                                     SAMPLE_RATE, passBandFreq_, 0.97,
-                                     2);
+    // reSID::SID::ComputeSamplingTable(cyclesPerSecond_,
+    //                                  reSID::SAMPLE_RESAMPLE,
+    //                                  SAMPLE_RATE, passBandFreq_, 0.97,
+    //                                  2);
+    // reSID::SID::ComputeSamplingTable(cyclesPerSecond_,
+    //                                  reSID::SAMPLE_RESAMPLE_FASTMEM,
+    //                                  SAMPLE_RATE, passBandFreq_, 0.97,
+    //                                  2);
     circle_kernel_core_init_complete(3);
 #endif
     break;
   }
 
-  if (nCore == 2) {
-     while (true) {
-        sem_dec(&sid_job);
-        sid_job_func(sid_job_psid, sid_job_pbuf, sid_job_nr,
-                     2, &sid_job_delta_t);
-        sem_inc(&sid_done);
-     }
-  }
+  // if (nCore == 2) {
+  //    while (true) {
+  //       sem_dec(&sid_job);
+  //       sid_job_func(sid_job_psid, sid_job_pbuf, sid_job_nr,
+  //                    2, &sid_job_delta_t);
+  //       sem_inc(&sid_done);
+  //    }
+  // }
 
 #ifdef ARM_ALLOW_MULTI_CORE
   printf("Core %d idle\n", nCore);
