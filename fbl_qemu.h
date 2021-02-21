@@ -148,6 +148,10 @@ private:
   // Raw pixel data. Not VC memory.
   uint8_t* pixels_;
 
+  // A1R5G5B5 pixel data for compositing (off-screen and on-screen)
+  uint16_t* resources_[2];
+  int rnum_;
+
   int fb_width_;
   int fb_height_;
   int fb_pitch_;

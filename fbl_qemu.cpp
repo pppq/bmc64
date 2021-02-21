@@ -15,6 +15,7 @@
 
 #include "fbl_qemu.h"
 
+#include <set>
 #include <limits.h>
 #include <malloc.h>
 #include <string.h>
@@ -75,16 +76,22 @@ static uint32_t pal_argb[256] = {
   ARGB(0x00, 0x00, 0x00, 0x00),
 };
 
-#define SCREEN_W 1024
-#define SCREEN_H 576
+#define SCREEN_W 800
+#define SCREEN_H 600
 
 static CBcmFrameBuffer *bcmFrameBuffer;
-static u32 frameBufferOffsetY = 0;
-static u32 frameBufferPageSize;
-static u32 frameBufferPitch;
-static u16 *frameBuffer;
+static uint32_t frameBufferOffsetY = 0;
+static uint32_t frameBufferPageSize;
+static uint32_t frameBufferPitch;
+static uint16_t *frameBuffer;
 
 bool FrameBufferLayer::initialized_ = false;
+
+static bool cmp_layer(FrameBufferLayer *a, FrameBufferLayer *b) {
+    return a->GetLayer() < b->GetLayer();
+}
+
+static std::set<FrameBufferLayer*, decltype(cmp_layer)*> visibleLayers(cmp_layer);
 
 // static
 void FrameBufferLayer::Initialize() {
@@ -101,7 +108,7 @@ void FrameBufferLayer::Initialize() {
 
   frameBufferPitch = bcmFrameBuffer->GetPitch();
   frameBufferPageSize = frameBufferPitch * SCREEN_H;
-  frameBuffer = (u16 *) (uintptr) bcmFrameBuffer->GetBuffer();
+  frameBuffer = (uint16_t *) (uintptr) bcmFrameBuffer->GetBuffer();
 
   initialized_ = true;
 }
@@ -212,6 +219,9 @@ int FrameBufferLayer::Allocate(
      src_h_ = height;
   }
 
+  resources_[0] = (uint16_t *) malloc(width * height * 2);
+  resources_[1] = (uint16_t *) malloc(width * height * 2);
+
   return 0;
 }
 
@@ -234,6 +244,9 @@ void FrameBufferLayer::Free() {
   fb_height_ = 0;
   fb_pitch_ = 0;
   free(pixels_);
+
+  free(resources_[0]);
+  free(resources_[1]);
 
   allocated_ = false;
 }
@@ -330,6 +343,7 @@ void FrameBufferLayer::Show() {
   dst_w_ = dst_w;
   dst_h_ = dst_h;
 
+  visibleLayers.insert(this);
   FrameReady(0);
   showing_ = true;
   SwapResources(false, this, nullptr);
@@ -338,6 +352,7 @@ void FrameBufferLayer::Show() {
 void FrameBufferLayer::Hide() {
   if (!showing_) return;
   showing_ = false;
+  visibleLayers.erase(this);
 }
 
 void* FrameBufferLayer::GetPixels() {
@@ -346,95 +361,59 @@ void* FrameBufferLayer::GetPixels() {
 
 void FrameBufferLayer::FrameReady(int to_offscreen) {
   // Copy data into either the offscreen resource (if to_offscreen) or the
-  // on screen resource (if !to_offscreen).
-
-  u32 offsetY;
-  if (to_offscreen) {
-    offsetY = frameBufferOffsetY ? 0 : SCREEN_H;
-  } else {
-    offsetY = frameBufferOffsetY ? SCREEN_H : 0;
-  }
-
-  u16 *dst = (u16 *) (((uintptr) frameBuffer)
-    + (offsetY * frameBufferPitch)
-    + (dst_y_ * frameBufferPitch)
-    + (dst_x_ << 1));
+  // on screen resource (if !to_offscreen). Only color conversion is happening here.
+  int rnum = to_offscreen ? 1 - rnum_ : rnum_;
+  uint16_t *dst = resources_[rnum];
 
   if (bytes_per_pixel_ == 1) {
-    u8 *src = (u8 *) (((uintptr) pixels_)
-      + (src_y_ * fb_pitch_) 
-      + src_x_);
+    uint8_t *src = pixels_;
 
-    int budget_y = 0;
-    int sy = 0;
-
-    for (int dy = 0; dy < dst_h_; dy++) {
-      budget_y += src_h_;
-      while (budget_y > dst_h_) {
-        budget_y -= dst_h_;
-        sy++;
-      }
-
-      int budget_x = 0;
-      int sx = 0;
-      
-      for (int dx = 0; dx < dst_w_; dx++) {
-        budget_x += src_w_;
-        while (budget_x > dst_w_) {
-          budget_x -= dst_w_;
-          sx++;
-        }
-
-        u8 srcIdx = src[sy * fb_pitch_ + sx];
+    for (int y = 0; y < fb_height_; y++) {
+      for (int x = 0; x < fb_width_; x++) {
+        uint8_t srcIdx = src[y * fb_pitch_ + x];
+        
+        uint8_t a;
+        uint8_t r;
+        uint8_t g;
+        uint8_t b;
 
         if (transparency_) {
-          u32 argbCol = pal_argb_[srcIdx];
-          u8 a = argbCol >> 24;
-
-          // 1-bit transparency only
-          if (a != 0) {
-            u8 r = (argbCol >> 19) & 31;
-            u8 g = (argbCol >> 10) & 63;
-            u8 b = (argbCol >> 3)  & 31;
-            dst[dx] = (u16) ((r << 11) | (g << 6) | b);
-          }
-
+          uint32_t srcCol32 = pal_argb_[srcIdx];
+          
+          a = (srcCol32 >> 24) > 0 ? 1 : 0;
+          r = (srcCol32 >> 19) & 31;
+          g = (srcCol32 >> 11) & 31;
+          b = (srcCol32 >> 3)  & 31;
         } else {
-          dst[dx] = pal_565_[srcIdx];
+          uint16_t srcCol16 = pal_565_[srcIdx];
+          
+          a = 1;
+          r = (srcCol16 >> 11) & 31;
+          g = (srcCol16 >> 6)  & 31;
+          b = srcCol16         & 31;
         }
+
+        dst[x] = (a << 15) | (r << 10) | (g << 5) | b;
       }
       
-      dst += (frameBufferPitch >> 1);
+      dst += fb_width_;
     }
   } else {
-    u16 *src = (u16 *) (((uintptr) pixels_)
-      + (src_y_ * fb_pitch_) 
-      + src_x_);
+    uint16_t *src = (uint16_t *) pixels_;
 
-    int budget_y = 0;
-    int sy = 0;
+    for (int y = 0; y < fb_height_; y++) {
+     for (int x = 0; x < fb_width_; x++) {
+        uint16_t srcCol16 = src[y * fb_pitch_ + x];
+          
+        uint8_t a = 1;
+        uint8_t r = (srcCol16 >> 11) & 31;
+        uint8_t g = (srcCol16 >> 6)  & 31;
+        uint8_t b = srcCol16         & 31;
 
-    for (int dy = 0; dy < dst_h_; dy++) {
-      budget_y += src_h_;
-      while (budget_y > dst_h_) {
-        budget_y -= dst_h_;
-        sy++;
+        dst[x] = (a << 15) | (r << 10) | (g << 5) | b;
       }
-      
-      int budget_x = 0;
-      int sx = 0;
 
-      for (int dx = 0; dx < dst_w_; dx++) {
-        budget_x += src_w_;
-        while (budget_x > dst_w_) {
-          budget_x -= dst_w_;
-          sx++;
-        }
-        
-        dst[dx] = src[sy * fb_pitch_ + sx];
-      }
-      
-      dst += (frameBufferPitch >> 1);
+      dst += fb_width_;
     }
   }
 }
@@ -448,13 +427,105 @@ void FrameBufferLayer::SwapResources(
   FrameBufferLayer* fb1,
   FrameBufferLayer* fb2) {
 
-  u32 nextOffsetY = frameBufferOffsetY ? 0 : SCREEN_H;
-  // void *page = (void *) (((uintptr) frameBuffer) + (nextOffsetY * frameBufferPitch));
-  // memset(page, 0x00, frameBufferPageSize);
+  if (fb1 && sync) { fb1->rnum_ = 1 - fb1->rnum_; }
+  if (fb2 && sync) { fb2->rnum_ = 1 - fb2->rnum_; }
 
-  if (fb1) { fb1->FrameReady(1); }
-  if (fb2) { fb2->FrameReady(1); }
-  frameBufferOffsetY = nextOffsetY;
+  frameBufferOffsetY = SCREEN_H - frameBufferOffsetY;
+
+  // Erase content around the first layer
+  boolean first = true;
+
+  // Re-draw all visible layers in order
+  std::set<FrameBufferLayer*, decltype(cmp_layer)*>::iterator it;
+  for (it = visibleLayers.begin(); it != visibleLayers.end(); ++it) {
+    FrameBufferLayer *current = *it;
+
+    uint16_t *src = current->resources_[current->rnum_]
+      + (current->src_y_ * current->fb_width_) 
+      + current->src_x_;
+
+    uint16_t *dst;
+    
+    if (first) {
+      dst = (uint16_t *) (((uintptr) frameBuffer)
+        + (frameBufferOffsetY * frameBufferPitch));
+    } else {
+      dst = (uint16_t *) (((uintptr) frameBuffer)
+        + (frameBufferOffsetY * frameBufferPitch)
+        + (current->dst_y_ * frameBufferPitch)
+        + (current->dst_x_ << 1));
+    }
+
+    int budget_y = 0;
+    int sy = 0;
+
+    // erase top edge
+    if (first) {
+      for (int y = 0; y < current->dst_y_; y++) {
+        memset(dst, 0x00, frameBufferPitch);
+        dst += (frameBufferPitch >> 1);
+      }
+    }
+
+    for (int dy = 0; dy < current->dst_h_; dy++) {
+      budget_y += current->src_h_;
+      while (budget_y > current->dst_h_) {
+        budget_y -= current->dst_h_;
+        sy++;
+      }
+      
+      // erase left edge
+      if (first) {
+        memset(dst, 0x00, (current->dst_x_ << 1));
+        dst += current->dst_x_;
+      }
+
+      int budget_x = 0;
+      int sx = 0;
+
+      for (int dx = 0; dx < current->dst_w_; dx++) {
+        budget_x += current->src_w_;
+        while (budget_x > current->dst_w_) {
+          budget_x -= current->dst_w_;
+          sx++;
+        }
+        
+        uint32_t srcCol = src[sy * current->fb_width_ + sx];
+        uint8_t a = srcCol >> 15;
+
+        // 1-bit alpha
+        if (a != 0) {
+          uint8_t sr = (srcCol >> 10) & 31;
+          uint8_t sg = (srcCol >> 5) & 31;
+          uint8_t sb = srcCol & 31;
+
+          // 5-to-6 bit conversion: shift in MSB from the left
+          sg = (sg << 1) | (sg & 24);
+
+          dst[dx] = (sr << 11) | (sg << 5) | sb;
+        }
+      }
+      
+      // erase right edge
+      if (first) {
+        memset(dst + current->dst_w_, 0x00, ((SCREEN_W - current->dst_w_ - current->dst_x_) << 1));
+        dst -= current->dst_x_;
+      }
+      
+      dst += (frameBufferPitch >> 1);
+    }
+
+    // erase bottom edge; the next layer is no longer the first one
+    if (first) {
+      for (int y = current->dst_y_ + current->dst_h_; y < SCREEN_H; y++) {
+        memset(dst, 0x00, frameBufferPitch);
+        dst += (frameBufferPitch >> 1);
+      }
+
+      first = false;
+    }
+  }
+
   bcmFrameBuffer->SetVirtualOffset(0, frameBufferOffsetY);
   
   if (sync) {
