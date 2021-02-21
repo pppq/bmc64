@@ -1,5 +1,5 @@
 //
-// fbl_tinygles.h
+// fbl_qemu.h
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,13 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef _fbl_tinygles_h
-#define _fbl_tinygles_h
+#ifndef _fbl_qemu_h
+#define _fbl_qemu_h
 
 #include <stdint.h>
-#include "circle/interrupt.h"
-#include "vc4/interface/vcinclude/vc_image_types.h"
-#include "littlevgl/littlevgl.h"
 
 // A wrapper that manages a single dispmanx layer and
 // indexed frame buffer.
