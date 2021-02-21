@@ -460,11 +460,9 @@ void FrameBufferLayer::SwapResources(
     int sy = 0;
 
     // erase top edge
-    if (first) {
-      for (int y = 0; y < current->dst_y_; y++) {
-        memset(dst, 0x00, frameBufferPitch);
-        dst += (frameBufferPitch >> 1);
-      }
+    if (first && current->dst_y_ > 0) {
+      memset(dst, 0x00, current->dst_y_ * frameBufferPitch);
+      dst += ((current->dst_y_ * frameBufferPitch) >> 1);
     }
 
     for (int dy = 0; dy < current->dst_h_; dy++) {
@@ -475,7 +473,7 @@ void FrameBufferLayer::SwapResources(
       }
       
       // erase left edge
-      if (first) {
+      if (first && current->dst_x_ > 0) {
         memset(dst, 0x00, (current->dst_x_ << 1));
         dst += current->dst_x_;
       }
@@ -508,8 +506,9 @@ void FrameBufferLayer::SwapResources(
       
       // erase right edge
       if (first) {
-        memset(dst + current->dst_w_, 0x00, ((SCREEN_W - current->dst_w_ - current->dst_x_) << 1));
-        dst -= current->dst_x_;
+        int32_t rightEdge = SCREEN_W - current->dst_w_ - current->dst_x_;
+        if (rightEdge > 0) { memset(dst + current->dst_w_, 0x00, (rightEdge << 1)); }
+        dst -= current->dst_x_; // dst_x_ can be 0, in which case this is a no-op
       }
       
       dst += (frameBufferPitch >> 1);
@@ -517,11 +516,8 @@ void FrameBufferLayer::SwapResources(
 
     // erase bottom edge; the next layer is no longer the first one
     if (first) {
-      for (int y = current->dst_y_ + current->dst_h_; y < SCREEN_H; y++) {
-        memset(dst, 0x00, frameBufferPitch);
-        dst += (frameBufferPitch >> 1);
-      }
-
+      int32_t bottomEdge = SCREEN_H - current->dst_h_ - current->dst_y_;
+      if (bottomEdge > 0) { memset(dst, 0x00, bottomEdge * frameBufferPitch); }
       first = false;
     }
   }
