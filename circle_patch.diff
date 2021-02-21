@@ -439,7 +439,7 @@ diff --git a/Rules.mk b/Rules.mk
 index 1878afe..d662fdc 100644
 --- a/Rules.mk
 +++ b/Rules.mk
-@@ -56,7 +56,7 @@ TARGET        ?= kernel7l
+@@ -56,7 +56,7 @@ TARGET	?= kernel7l
  else
  $(error RASPPI must be set to 1, 2, 3 or 4)
  endif
@@ -447,17 +447,17 @@ index 1878afe..d662fdc 100644
 +LOADADDR = 0x10000
  else ifeq ($(strip $(AARCH)),64)
  ifeq ($(strip $(RASPPI)),3)
- ARCH   ?= -DAARCH=64 -march=armv8-a -mtune=cortex-a53 -mlittle-endian -mcmodel=small
+ ARCH	?= -DAARCH=64 -march=armv8-a -mtune=cortex-a53 -mlittle-endian -mcmodel=small
 diff --git a/lib/usb/dwhcidevice.cpp b/lib/usb/dwhcidevice.cpp
 index 95d92be..6bb92c5 100644
 --- a/lib/usb/dwhcidevice.cpp
 +++ b/lib/usb/dwhcidevice.cpp
 @@ -123,7 +123,7 @@ boolean CDWHCIDevice::Initialize (void)
-        assert (m_pTimer != 0);
+	assert (m_pTimer != 0);
 
-        CDWHCIRegister VendorId (DWHCI_CORE_VENDOR_ID);
--       if (VendorId.Read () != 0x4F54280A)
-+       if (VendorId.Read () != 0x4F54280A && VendorId.Read () != 0x4F54294A)
-        {
-                CLogger::Get ()->Write (FromDWHCI, LogError, "Unknown vendor 0x%0X", VendorId.Get ());
-                return FALSE;
+	CDWHCIRegister VendorId (DWHCI_CORE_VENDOR_ID);
+-	if (VendorId.Read () != 0x4F54280A)
++	if (VendorId.Read () != 0x4F54280A && VendorId.Read () != 0x4F54294A)
+	{
+		CLogger::Get ()->Write (FromDWHCI, LogError, "Unknown vendor 0x%0X", VendorId.Get ());
+		return FALSE;
