@@ -33,13 +33,17 @@ ViceOptions *ViceOptions::s_pThis = 0;
 
 ViceOptions::ViceOptions(void)
     : m_nMachineTiming(MACHINE_TIMING_PAL_HDMI),
-      m_bDemoEnabled(false), m_bSerialEnabled(false),
+      m_bDemoEnabled(false), m_bSerialEnabled(true),
       m_bGPIOOutputsEnabled(false), m_nCyclesPerSecond(0),
       m_audioOut(VCHIQSoundDestinationAuto), m_bDPIEnabled(false),
       m_scaling_param_fbw{0,0}, m_scaling_param_fbh{0,0},
       m_scaling_param_sx{0,0}, m_scaling_param_sy{0,0},
       m_raster_skip(false) {
   s_pThis = this;
+
+  // Set the default volume we mount for fatfs
+  m_disk_partition = 0; // this tells fatfs 'auto'
+  strcpy(m_disk_volume, "SD");
 
   CBcmPropertyTags Tags;
   if (!Tags.GetTag(PROPTAG_GET_COMMAND_LINE, &m_TagCommandLine,
@@ -53,10 +57,6 @@ ViceOptions::ViceOptions(void)
   m_TagCommandLine.String[m_TagCommandLine.Tag.nValueLength] = '\0';
 
   m_pOptions = (char *)m_TagCommandLine.String;
-
-  // Set the default volume we mount for fatfs
-  m_disk_partition = 0; // this tells fatfs 'auto'
-  strcpy(m_disk_volume, "SD");
 
   char *pOption;
   while ((pOption = GetToken()) != 0) {
